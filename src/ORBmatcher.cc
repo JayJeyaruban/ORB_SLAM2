@@ -27,7 +27,11 @@
 
 #include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
 
-#include<stdint-gcc.h>
+#if defined(__clang__)
+#include <stdint.h>
+#else
+#include <stdint-gcc.h>
+#endif
 
 using namespace std;
 

@@ -24,23 +24,68 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+namespace {
+
+#ifdef G2O_OPENMP
+
+  class QuadraticFormLock {
+  public:
+  QuadraticFormLock(OptimizableGraph::Vertex& vertex) : _vertex(vertex) {
+    _vertex.lockQuadraticForm();
+  }
+
+  ~QuadraticFormLock() {
+    _vertex.unlockQuadraticForm();
+  }
+
+private:
+  OptimizableGraph::Vertex& _vertex;
+};
+
+#else
+
+class QuadraticFormLock {
+public:
+  QuadraticFormLock(OptimizableGraph::Vertex& /*vertex*/) {
+  }
+
+  ~QuadraticFormLock() {
+  }
+};
+
+#endif
+
+  
+} // anonymous namespace
+
+
+#define VERTEX_I_DIM ((VertexXiType::Dimension < 0) ? static_cast<VertexXiType*> (_vertices[0])->dimension() : VertexXiType::Dimension)
+#define VERTEX_J_DIM ((VertexXjType::Dimension < 0) ? static_cast<VertexXjType*> (_vertices[1])->dimension() : VertexXjType::Dimension)
+
+
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
 OptimizableGraph::Vertex* BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::createFrom(){
-  return new VertexXiType();
+  return createVertex(0);
 }
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
 OptimizableGraph::Vertex* BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::createTo(){
-  return new VertexXjType();
+  return createVertex(1);
 }
 
+template <int D, typename E, typename VertexXiType, typename VertexXjType>
+OptimizableGraph::Vertex* BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::createVertex(int i){
+  switch(i) {
+  case 0: return new VertexXiType();
+  case 1: return new VertexXjType();
+  default: return 0;
+  }
+}
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
 void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::resize(size_t size)
 {
-  if (size != 2) {
-    std::cerr << "WARNING, attempting to resize binary edge " << BaseEdge<D, E>::id() << " to " << size << std::endl;
-  }
+  assert(size == 2 && "attempting to resize a binary edge");
   BaseEdge<D, E>::resize(size);
 }
 
@@ -66,31 +111,35 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::constructQuadraticForm()
   bool toNotFixed = !(to->fixed());
 
   if (fromNotFixed || toNotFixed) {
-#ifdef G2O_OPENMP
-    from->lockQuadraticForm();
-    to->lockQuadraticForm();
-#endif
     const InformationType& omega = _information;
-    Matrix<double, D, 1> omega_r = - omega * _error;
+    Eigen::Matrix<number_t, D, 1, Eigen::ColMajor> omega_r = - omega * _error;
     if (this->robustKernel() == 0) {
       if (fromNotFixed) {
-        Matrix<double, VertexXiType::Dimension, D> AtO = A.transpose() * omega;
-        from->b().noalias() += A.transpose() * omega_r;
-        from->A().noalias() += AtO*A;
+        Eigen::Matrix<number_t, VertexXiType::Dimension, D, Eigen::ColMajor> AtO = A.transpose() * omega;
+
+        {
+          QuadraticFormLock lck(*from);
+
+          from->b().noalias() += A.transpose() * omega_r;
+          from->A().noalias() += AtO*A;
+        }
+
         if (toNotFixed ) {
           if (_hessianRowMajor) // we have to write to the block as transposed
             _hessianTransposed.noalias() += B.transpose() * AtO.transpose();
           else
             _hessian.noalias() += AtO * B;
         }
-      } 
+      }
       if (toNotFixed) {
+        QuadraticFormLock lck(*to);
+
         to->b().noalias() += B.transpose() * omega_r;
         to->A().noalias() += B.transpose() * omega * B;
       }
     } else { // robust (weighted) error according to some kernel
-      double error = this->chi2();
-      Eigen::Vector3d rho;
+      number_t error = this->chi2();
+      Vector3 rho;
       this->robustKernel()->robustify(error, rho);
       InformationType weightedOmega = this->robustInformation(rho);
       //std::cout << PVAR(rho.transpose()) << std::endl;
@@ -98,32 +147,35 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::constructQuadraticForm()
 
       omega_r *= rho[1];
       if (fromNotFixed) {
-        from->b().noalias() += A.transpose() * omega_r;
-        from->A().noalias() += A.transpose() * weightedOmega * A;
+        {
+          QuadraticFormLock lck(*from);
+
+          from->b().noalias() += A.transpose() * omega_r;
+          from->A().noalias() += A.transpose() * weightedOmega * A;
+        }
+
         if (toNotFixed ) {
           if (_hessianRowMajor) // we have to write to the block as transposed
             _hessianTransposed.noalias() += B.transpose() * weightedOmega * A;
           else
             _hessian.noalias() += A.transpose() * weightedOmega * B;
         }
-      } 
+      }
       if (toNotFixed) {
+        QuadraticFormLock lck(*to);
+
         to->b().noalias() += B.transpose() * omega_r;
         to->A().noalias() += B.transpose() * weightedOmega * B;
       }
     }
-#ifdef G2O_OPENMP
-    to->unlockQuadraticForm();
-    from->unlockQuadraticForm();
-#endif
   }
 }
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
 void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus(JacobianWorkspace& jacobianWorkspace)
 {
-  new (&_jacobianOplusXi) JacobianXiOplusType(jacobianWorkspace.workspaceForVertex(0), D, Di);
-  new (&_jacobianOplusXj) JacobianXjOplusType(jacobianWorkspace.workspaceForVertex(1), D, Dj);
+  new (&_jacobianOplusXi) JacobianXiOplusType(jacobianWorkspace.workspaceForVertex(0), D < 0 ? _dimension : D, VERTEX_I_DIM);
+  new (&_jacobianOplusXj) JacobianXjOplusType(jacobianWorkspace.workspaceForVertex(1), D < 0 ? _dimension : D, VERTEX_J_DIM);
   linearizeOplus();
 }
 
@@ -139,80 +191,143 @@ void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::linearizeOplus()
   if (!iNotFixed && !jNotFixed)
     return;
 
-#ifdef G2O_OPENMP
-  vi->lockQuadraticForm();
-  vj->lockQuadraticForm();
-#endif
-
-  const double delta = 1e-9;
-  const double scalar = 1.0 / (2*delta);
+  const number_t delta = cst(1e-9);
+  const number_t scalar = 1 / (2*delta);
   ErrorVector errorBak;
   ErrorVector errorBeforeNumeric = _error;
 
+  // A statically allocated array is far and away the most efficient
+  // way to construct the perturbation vector for the Jacobian. If the
+  // dimension is known at compile time, use directly. If the
+  // dimension is known at run time and is less than 20, use an
+  // allocated array of up to 20. Otherwise, use a fallback of a
+  // dynamically allocated array. Experiments show that the allocated
+  // array using a pointer-type iterator rather than an array accessor
+  // is much more efficient.
+  
   if (iNotFixed) {
+    QuadraticFormLock lck(*vi);
     //Xi - estimate the jacobian numerically
-    double add_vi[VertexXiType::Dimension];
-    std::fill(add_vi, add_vi + VertexXiType::Dimension, 0.0);
-    // add small step along the unit vector in each dimension
-    for (int d = 0; d < VertexXiType::Dimension; ++d) {
-      vi->push();
-      add_vi[d] = delta;
-      vi->oplus(add_vi);
-      computeError();
-      errorBak = _error;
-      vi->pop();
-      vi->push();
-      add_vi[d] = -delta;
-      vi->oplus(add_vi);
-      computeError();
-      errorBak -= _error;
-      vi->pop();
-      add_vi[d] = 0.0;
 
-      _jacobianOplusXi.col(d) = scalar * errorBak;
-    } // end dimension
+    if ((VertexXiType::Dimension >= 0) || (vi->dimension() <= 12))
+      {
+        const int vi_dim = (VertexXiType::Dimension >= 0) ? VertexXiType::Dimension : vi->dimension();
+        number_t add_vi[(VertexXiType::Dimension >= 0) ? VertexXiType::Dimension : 12] = {};
+        
+        // add small step along the unit vector in each dimension
+        for (int d = 0; d < vi_dim; ++d) {
+          vi->push();
+          add_vi[d] = delta;
+          vi->oplus(add_vi);
+          computeError();
+          errorBak = _error;
+          vi->pop();
+          vi->push();
+          add_vi[d] = -delta;
+          vi->oplus(add_vi);
+          computeError();
+          errorBak -= _error;
+          vi->pop();
+          add_vi[d] = 0.0;          
+          _jacobianOplusXi.col(d) = scalar * errorBak;
+        } // end dimension
+      }
+    else
+      {
+        const int vi_dim = vi->dimension();
+        dynamic_aligned_buffer<number_t> buffer{ size_t(vi_dim) };
+        number_t* add_vi = buffer.request(vi_dim);
+        std::fill(add_vi, add_vi + vi_dim, cst(0.0));
+
+        // add small step along the unit vector in each dimension
+        for (int d = 0; d < vi_dim; ++d) {
+          vi->push();
+          add_vi[d] = delta;
+          vi->oplus(add_vi);
+          computeError();
+          errorBak = _error;
+          vi->pop();
+          vi->push();
+          add_vi[d] = - delta;
+          vi->oplus(add_vi);
+          computeError();
+          errorBak -= _error;
+          vi->pop();
+          add_vi[d] = 0;
+          _jacobianOplusXi.col(d) = scalar * errorBak;
+        } // end dimension
+      }
   }
 
   if (jNotFixed) {
+    QuadraticFormLock lck(*vj);
     //Xj - estimate the jacobian numerically
-    double add_vj[VertexXjType::Dimension];
-    std::fill(add_vj, add_vj + VertexXjType::Dimension, 0.0);
-    // add small step along the unit vector in each dimension
-    for (int d = 0; d < VertexXjType::Dimension; ++d) {
-      vj->push();
-      add_vj[d] = delta;
-      vj->oplus(add_vj);
-      computeError();
-      errorBak = _error;
-      vj->pop();
-      vj->push();
-      add_vj[d] = -delta;
-      vj->oplus(add_vj);
-      computeError();
-      errorBak -= _error;
-      vj->pop();
-      add_vj[d] = 0.0;
+    if ((VertexXjType::Dimension >= 0) || (vj->dimension() <= 12))
+      {
+        const int vj_dim = (VertexXjType::Dimension >= 0) ? VertexXjType::Dimension : vj->dimension();
+        number_t add_vj[(VertexXjType::Dimension >= 0) ? VertexXjType::Dimension : 12] = {};
 
-      _jacobianOplusXj.col(d) = scalar * errorBak;
-    }
-  } // end dimension
-
+        // add small step along the unit vector in each dimension
+        for (int d = 0; d < vj_dim; ++d) {
+          vj->push();
+          add_vj[d] = delta;
+          vj->oplus(add_vj);
+          computeError();
+          errorBak = _error;
+          vj->pop();
+          vj->push();
+          add_vj[d] = -delta;
+          vj->oplus(add_vj);
+          computeError();
+          errorBak -= _error;
+          vj->pop();
+          add_vj[d] = 0.0;
+          
+          _jacobianOplusXj.col(d) = scalar * errorBak;
+        } // end dimension
+      }
+    else
+      {
+        const int vj_dim = vj->dimension();
+        dynamic_aligned_buffer<number_t> buffer{ size_t(vj_dim) };
+        number_t* add_vj = buffer.request(vj_dim);
+        std::fill(add_vj, add_vj + vj_dim, cst(0.0));
+        
+        // add small step along the unit vector in each dimension
+        for (int d = 0; d < vj_dim; ++d) {
+          vj->push();
+          add_vj[d] = delta;
+          vj->oplus(add_vj);
+          computeError();
+          errorBak = _error;
+          vj->pop();
+          vj->push();
+          add_vj[d] = - delta;
+          vj->oplus(add_vj);
+          computeError();
+          errorBak -= _error;
+          vj->pop();
+          add_vj[d] = 0;
+          _jacobianOplusXj.col(d) = scalar * errorBak;
+        } // end dimension
+      }
+  }
   _error = errorBeforeNumeric;
-#ifdef G2O_OPENMP
-  vj->unlockQuadraticForm();
-  vi->unlockQuadraticForm();
-#endif
 }
 
 template <int D, typename E, typename VertexXiType, typename VertexXjType>
-void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::mapHessianMemory(double* d, int i, int j, bool rowMajor)
+void BaseBinaryEdge<D, E, VertexXiType, VertexXjType>::mapHessianMemory(number_t* d, int i, int j, bool rowMajor)
 {
   (void) i; (void) j;
   //assert(i == 0 && j == 1);
   if (rowMajor) {
-    new (&_hessianTransposed) HessianBlockTransposedType(d, VertexXjType::Dimension, VertexXiType::Dimension);
+    new (&_hessianTransposed) HessianBlockTransposedType(d, VERTEX_J_DIM, VERTEX_I_DIM);
   } else {
-    new (&_hessian) HessianBlockType(d, VertexXiType::Dimension, VertexXjType::Dimension);
+    new (&_hessian) HessianBlockType(d, VERTEX_I_DIM, VERTEX_J_DIM);
   }
   _hessianRowMajor = rowMajor;
 }
+
+#undef VERTEX_I_DIM
+#undef VERTEX_J_DIM
+

@@ -45,10 +45,15 @@ class LoopClosing
 {
 public:
 
-    typedef pair<set<KeyFrame*>,int> ConsistentGroup;    
-    typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
-        Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> > > KeyFrameAndPose;
+  typedef std::pair<set<KeyFrame*>,int> ConsistentGroup;    
+  //typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
+  //Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> > > KeyFrameAndPose;
 
+  typedef std::map<intptr_t,g2o::Sim3,std::less<intptr_t>,
+        Eigen::aligned_allocator<std::pair<const intptr_t, g2o::Sim3> > > KeyFrameAndPose;
+
+
+    
 public:
 
     LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
@@ -142,8 +147,8 @@ protected:
     // Fix scale in the stereo/RGB-D case
     bool mbFixScale;
 
-
-    bool mnFullBAIdx;
+    // Correct?
+    int mnFullBAIdx;
 };
 
 } //namespace ORB_SLAM
