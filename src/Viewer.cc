@@ -50,14 +50,28 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
     mViewpointY = fSettings["Viewer.ViewpointY"];
     mViewpointZ = fSettings["Viewer.ViewpointZ"];
     mViewpointF = fSettings["Viewer.ViewpointF"];
+
+    Setup();
 }
+
+    void Viewer::Setup() {
+        windowName = "ORB-SLAM2: Map Viewer";
+        // create a window and bind its context to the main thread
+        pangolin::CreateWindowAndBind(windowName, 1024, 768);
+
+        // enable depth
+        glEnable(GL_DEPTH_TEST);
+
+        // unset the current context from the main thread
+        pangolin::GetBoundWindow()->RemoveCurrent();
+    }
 
 void Viewer::Run()
 {
     mbFinished = false;
     mbStopped = false;
 
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
+    pangolin::BindToContext(windowName);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
@@ -166,6 +180,7 @@ void Viewer::Run()
             break;
     }
 
+    pangolin::GetBoundWindow()->RemoveCurrent();
     SetFinish();
 }
 

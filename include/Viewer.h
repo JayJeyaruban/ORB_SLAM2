@@ -60,6 +60,8 @@ private:
 
     bool Stop();
 
+    void Setup();
+
     System* mpSystem;
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
@@ -81,6 +83,7 @@ private:
     bool mbStopRequested;
     std::mutex mMutexStop;
 
+    std::string windowName;
 };
 
 }
