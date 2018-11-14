@@ -24,6 +24,7 @@
 #include<fstream>
 #include<chrono>
 #include<iomanip>
+#include<future>
 
 #include<opencv2/core/core.hpp>
 
@@ -35,13 +36,24 @@ using namespace std;
 void LoadImages(const string &strSequence, vector<string> &vstrImageFilenames,
                 vector<double> &vTimestamps);
 
-int main(int argc, char **argv)
-{
-    if(argc != 4)
-    {
+int processing(char **argv, ORB_SLAM2::System* slamPtr);
+
+int main(int argc, char **argv) {
+    if (argc != 4) {
         cerr << endl << "Usage: ./mono_kitti path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
     }
+
+    // Create SLAM system. It initializes all system threads and gets ready to process frames.
+    ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR, true);
+    auto result = async(launch::async, processing, argv, &SLAM);
+    SLAM.RunViewer();
+
+    return result.get();
+}
+
+int processing(char **argv, ORB_SLAM2::System* slamPtr) {
+    ORB_SLAM2::System& SLAM = *slamPtr;
 
     // Retrieve paths to images
     vector<string> vstrImageFilenames;
@@ -49,9 +61,6 @@ int main(int argc, char **argv)
     LoadImages(string(argv[3]), vstrImageFilenames, vTimestamps);
 
     int nImages = vstrImageFilenames.size();
-
-    // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR,true);
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
