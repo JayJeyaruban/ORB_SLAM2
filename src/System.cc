@@ -493,4 +493,9 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     return mTrackedKeyPointsUn;
 }
 
+int System::GetSensor()
+{
+    return mSensor;
+}
+
 } //namespace ORB_SLAM
