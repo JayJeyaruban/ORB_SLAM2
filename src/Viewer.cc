@@ -55,7 +55,7 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
 }
 
     void Viewer::Setup() {
-        windowName = "ORB-SLAM2: Map Viewer";
+        windowName = std::tmpnam(NULL);
         // create a window and bind its context to the main thread
         pangolin::CreateWindowAndBind(windowName, 1024, 768);
 

@@ -493,7 +493,7 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     return mTrackedKeyPointsUn;
 }
 
-int System::GetSensor()
+System::eSensor System::GetSensor()
 {
     return mSensor;
 }

@@ -127,7 +127,7 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
-    int GetSensor();
+    eSensor GetSensor();
 
 private:
 
