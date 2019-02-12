@@ -63,7 +63,8 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
         glEnable(GL_DEPTH_TEST);
 
         // unset the current context from the main thread
-        pangolin::GetBoundWindow()->RemoveCurrent();
+//        pangolin::GetBoundWindow()->RemoveCurrent();
+        pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
     }
 
 void Viewer::Run()
@@ -71,7 +72,7 @@ void Viewer::Run()
     mbFinished = false;
     mbStopped = false;
 
-    pangolin::BindToContext(windowName);
+//    pangolin::BindToContext(windowName);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
@@ -80,7 +81,6 @@ void Viewer::Run()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
     pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
@@ -102,13 +102,14 @@ void Viewer::Run()
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
-    cv::namedWindow("ORB-SLAM2: Current Frame");
+//    cv::namedWindow("ORB-SLAM2: Current Frame");
+    cv::namedWindow(windowName);
 
     bool bFollow = true;
     bool bLocalizationMode = false;
 
-    while(1)
-    {
+//    while(1)
+//    {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         mpMapDrawer->GetCurrentOpenGLCameraMatrix(Twc);
@@ -150,7 +151,8 @@ void Viewer::Run()
         pangolin::FinishFrame();
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
-        cv::imshow("ORB-SLAM2: Current Frame",im);
+//        cv::imshow("ORB-SLAM2: Current Frame",im);
+        cv::imshow(windowName,im);
         cv::waitKey(mT);
 
         if(menuReset)
@@ -176,11 +178,11 @@ void Viewer::Run()
             }
         }
 
-        if(CheckFinish())
-            break;
-    }
+//        if(CheckFinish())
+//            break;
+//    }
 
-    pangolin::GetBoundWindow()->RemoveCurrent();
+//    pangolin::GetBoundWindow()->RemoveCurrent();
     SetFinish();
 }
 
