@@ -84,6 +84,18 @@ private:
     std::mutex mMutexStop;
 
     std::string windowName;
+
+    pangolin::Var<bool>* mpMenuFollowCamera;
+    pangolin::Var<bool>* mpMenuShowPoints;
+    pangolin::Var<bool>* mpMenuShowKeyFrames;
+    pangolin::Var<bool>* mpMenuShowGraph;
+    pangolin::Var<bool>* mpMenuLocalizationMode;
+    pangolin::Var<bool>* mpMenuReset;
+
+    pangolin::OpenGlRenderState s_cam;
+    pangolin::View d_cam;
+
+    pangolin::OpenGlMatrix Twc;
 };
 
 }

@@ -46,9 +46,20 @@ int main(int argc, char **argv) {
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR, true);
-    processing(argv, &SLAM);
-//    auto result = async(launch::async, processing, argv, &SLAM);
+//    processing(argv, &SLAM);
+    auto result = async(launch::async, processing, argv, &SLAM);
 //    SLAM.RunViewer();
+
+    while(1) {
+        auto result_status = result.wait_for(chrono::milliseconds(1));
+        if (result_status == future_status::timeout) {
+            SLAM.RunViewer();
+        }
+
+        if (result_status == future_status::ready) {
+            break;
+        }
+    }
 
 //    return result.get();
     return 0;
@@ -114,7 +125,7 @@ int processing(char **argv, ORB_SLAM2::System* slamPtr) {
 
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
-        SLAM.RunViewer();
+//        SLAM.RunViewer();
     }
 
     // Stop all threads
