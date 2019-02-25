@@ -60,8 +60,6 @@ namespace ORB_SLAM2 {
         // enable depth
         glEnable(GL_DEPTH_TEST);
 
-        // unset the current context from the main thread
-//        pangolin::GetBoundWindow()->RemoveCurrent();
         pangolin::CreatePanel("menu").SetBounds(0.0, 1.0, 0.0, pangolin::Attach::Pix(175));
 
         // 3D Mouse handler requires depth testing to be enabled
@@ -89,19 +87,20 @@ namespace ORB_SLAM2 {
                 .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f / 768.0f)
                 .SetHandler(new pangolin::Handler3D(s_cam));
 
-        Twc.SetIdentity();
-
 //    cv::namedWindow("ORB-SLAM2: Current Frame");
         cv::namedWindow(windowName);
+        // unset the current context from the main thread
+        pangolin::GetBoundWindow()->RemoveCurrent();
     }
 
     void Viewer::Run() {
         mbFinished = false;
         mbStopped = false;
 
-//    pangolin::BindToContext(windowName);
+        pangolin::BindToContext(windowName);
 
-
+        pangolin::OpenGlMatrix Twc;
+        Twc.SetIdentity();
 
 //    pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
 //    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
@@ -188,44 +187,44 @@ namespace ORB_SLAM2 {
 //            break;
 //    }
 
-//    pangolin::GetBoundWindow()->RemoveCurrent();
+        pangolin::GetBoundWindow()->RemoveCurrent();
         SetFinish();
     }
 
     void Viewer::RequestFinish() {
-        unique_lock<mutex> lock(mMutexFinish);
+        unique_lock <mutex> lock(mMutexFinish);
         mbFinishRequested = true;
     }
 
     bool Viewer::CheckFinish() {
-        unique_lock<mutex> lock(mMutexFinish);
+        unique_lock <mutex> lock(mMutexFinish);
         return mbFinishRequested;
     }
 
     void Viewer::SetFinish() {
-        unique_lock<mutex> lock(mMutexFinish);
+        unique_lock <mutex> lock(mMutexFinish);
         mbFinished = true;
     }
 
     bool Viewer::isFinished() {
-        unique_lock<mutex> lock(mMutexFinish);
+        unique_lock <mutex> lock(mMutexFinish);
         return mbFinished;
     }
 
     void Viewer::RequestStop() {
-        unique_lock<mutex> lock(mMutexStop);
+        unique_lock <mutex> lock(mMutexStop);
         if (!mbStopped)
             mbStopRequested = true;
     }
 
     bool Viewer::isStopped() {
-        unique_lock<mutex> lock(mMutexStop);
+        unique_lock <mutex> lock(mMutexStop);
         return mbStopped;
     }
 
     bool Viewer::Stop() {
-        unique_lock<mutex> lock(mMutexStop);
-        unique_lock<mutex> lock2(mMutexFinish);
+        unique_lock <mutex> lock(mMutexStop);
+        unique_lock <mutex> lock2(mMutexFinish);
 
         if (mbFinishRequested)
             return false;
@@ -240,7 +239,7 @@ namespace ORB_SLAM2 {
     }
 
     void Viewer::Release() {
-        unique_lock<mutex> lock(mMutexStop);
+        unique_lock <mutex> lock(mMutexStop);
         mbStopped = false;
     }
 

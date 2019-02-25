@@ -95,7 +95,6 @@ private:
     pangolin::OpenGlRenderState s_cam;
     pangolin::View d_cam;
 
-    pangolin::OpenGlMatrix Twc;
 };
 
 }

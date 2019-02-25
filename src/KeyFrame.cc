@@ -26,7 +26,7 @@
 namespace ORB_SLAM2
 {
 
-long unsigned int KeyFrame::nNextId=0;
+thread_local long unsigned int KeyFrame::nNextId=0;
 
 KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mnFrameId(F.mnId),  mTimeStamp(F.mTimeStamp), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
