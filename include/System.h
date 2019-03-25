@@ -128,6 +128,7 @@ public:
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
     eSensor GetSensor();
+    Map* GetMap();
 
 private:
 
