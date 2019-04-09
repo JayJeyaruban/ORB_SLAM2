@@ -498,8 +498,8 @@ System::eSensor System::GetSensor()
     return mSensor;
 }
 
-    Map* System::GetMap() {
-        return new Map(*mpMap);
+    vector<KeyFrame *> System::GetKeyFrames() {
+        return mpMap->GetAllKeyFrames();
     }
 
 } //namespace ORB_SLAM
