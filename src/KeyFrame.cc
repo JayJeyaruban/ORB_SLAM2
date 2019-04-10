@@ -54,7 +54,7 @@ namespace ORB_SLAM2 {
     }
 
     KeyFrame::KeyFrame(KeyFrame &KF, Map *pMap) :
-            mnFrameId(KF.mnId), mTimeStamp(KF.mTimeStamp), mnGridCols(KF.mnGridCols), mnGridRows(KF.mnGridRows),
+            mnFrameId(KF.mnFrameId), mTimeStamp(KF.mTimeStamp), mnGridCols(KF.mnGridCols), mnGridRows(KF.mnGridRows),
             mfGridElementWidthInv(KF.mfGridElementWidthInv), mfGridElementHeightInv(KF.mfGridElementHeightInv),
             mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0), mnLoopQuery(0),
             mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0), fx(KF.fx), fy(KF.fy), cx(KF.cx),
