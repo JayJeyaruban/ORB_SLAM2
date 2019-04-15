@@ -23,4 +23,6 @@ build/
 lib/
 
 .idea/*
+build_debug.sh
+cmake-build-debug/
 
