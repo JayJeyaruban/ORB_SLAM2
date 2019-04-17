@@ -117,6 +117,7 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
+    Frame* GetFrame();
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
@@ -189,6 +190,8 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
 
+    ORB_SLAM2::Frame* frame;
+
 
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:
@@ -223,7 +226,7 @@ protected:
     // Bad flags
     bool mbNotErase;
     bool mbToBeErased;
-    bool mbBad;    
+    bool mbBad;
 
     float mHalfBaseline; // Only for visualization
 

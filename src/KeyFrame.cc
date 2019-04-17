@@ -40,7 +40,7 @@ namespace ORB_SLAM2 {
             mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
             mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
             mpORBvocabulary(F.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
-            mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb / 2), mpMap(pMap) {
+            mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb / 2), mpMap(pMap), frame(&F) {
         mnId = nNextId++;
 
         mGrid.resize(mnGridCols);
@@ -261,8 +261,7 @@ namespace ORB_SLAM2 {
                     if (bCheckObs) {
                         if (mvpMapPoints[i]->Observations() >= minObs)
                             nPoints++;
-                    }
-                    else
+                    } else
                         nPoints++;
                 }
             }
@@ -491,8 +490,7 @@ namespace ORB_SLAM2 {
                     pC->ChangeParent(pP);
                     sParentCandidates.insert(pC);
                     mspChildrens.erase(pC);
-                }
-                else
+                } else
                     break;
             }
 
@@ -583,8 +581,7 @@ namespace ORB_SLAM2 {
 
             unique_lock<mutex> lock(mMutexPose);
             return Twc.rowRange(0, 3).colRange(0, 3) * x3Dc + Twc.rowRange(0, 3).col(3);
-        }
-        else
+        } else
             return cv::Mat();
     }
 
@@ -615,6 +612,10 @@ namespace ORB_SLAM2 {
         sort(vDepths.begin(), vDepths.end());
 
         return vDepths[(vDepths.size() - 1) / q];
+    }
+
+    Frame *KeyFrame::GetFrame() {
+        return frame;
     }
 
 } //namespace ORB_SLAM
