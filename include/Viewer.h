@@ -95,6 +95,8 @@ private:
     pangolin::OpenGlRenderState s_cam;
     pangolin::View d_cam;
 
+    static int viewerId;
+    std::mutex idMutex;
 };
 
 }

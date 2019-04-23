@@ -25,6 +25,7 @@
 #include<unistd.h>
 
 namespace ORB_SLAM2 {
+    int Viewer::viewerId = 1;
 
     Viewer::Viewer(System *pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking,
                    const string &strSettingPath) :
@@ -53,7 +54,11 @@ namespace ORB_SLAM2 {
     }
 
     void Viewer::Setup() {
-        windowName = std::tmpnam(NULL);
+        windowName = "Viewer ";
+        idMutex.lock();
+        windowName += std::to_string(viewerId);
+        viewerId++;
+        idMutex.unlock();
         // create a window and bind its context to the main thread
         pangolin::CreateWindowAndBind(windowName, 1024, 768);
 
@@ -128,22 +133,19 @@ namespace ORB_SLAM2 {
 
         if (menuFollowCamera && bFollow) {
             s_cam.Follow(Twc);
-        }
-        else if (menuFollowCamera && !bFollow) {
+        } else if (menuFollowCamera && !bFollow) {
             s_cam.SetModelViewMatrix(
                     pangolin::ModelViewLookAt(mViewpointX, mViewpointY, mViewpointZ, 0, 0, 0, 0.0, -1.0, 0.0));
             s_cam.Follow(Twc);
             bFollow = true;
-        }
-        else if (!menuFollowCamera && bFollow) {
+        } else if (!menuFollowCamera && bFollow) {
             bFollow = false;
         }
 
         if (menuLocalizationMode && !bLocalizationMode) {
             mpSystem->ActivateLocalizationMode();
             bLocalizationMode = true;
-        }
-        else if (!menuLocalizationMode && bLocalizationMode) {
+        } else if (!menuLocalizationMode && bLocalizationMode) {
             mpSystem->DeactivateLocalizationMode();
             bLocalizationMode = false;
         }
@@ -192,39 +194,39 @@ namespace ORB_SLAM2 {
     }
 
     void Viewer::RequestFinish() {
-        unique_lock <mutex> lock(mMutexFinish);
+        unique_lock<mutex> lock(mMutexFinish);
         mbFinishRequested = true;
     }
 
     bool Viewer::CheckFinish() {
-        unique_lock <mutex> lock(mMutexFinish);
+        unique_lock<mutex> lock(mMutexFinish);
         return mbFinishRequested;
     }
 
     void Viewer::SetFinish() {
-        unique_lock <mutex> lock(mMutexFinish);
+        unique_lock<mutex> lock(mMutexFinish);
         mbFinished = true;
     }
 
     bool Viewer::isFinished() {
-        unique_lock <mutex> lock(mMutexFinish);
+        unique_lock<mutex> lock(mMutexFinish);
         return mbFinished;
     }
 
     void Viewer::RequestStop() {
-        unique_lock <mutex> lock(mMutexStop);
+        unique_lock<mutex> lock(mMutexStop);
         if (!mbStopped)
             mbStopRequested = true;
     }
 
     bool Viewer::isStopped() {
-        unique_lock <mutex> lock(mMutexStop);
+        unique_lock<mutex> lock(mMutexStop);
         return mbStopped;
     }
 
     bool Viewer::Stop() {
-        unique_lock <mutex> lock(mMutexStop);
-        unique_lock <mutex> lock2(mMutexFinish);
+        unique_lock<mutex> lock(mMutexStop);
+        unique_lock<mutex> lock2(mMutexFinish);
 
         if (mbFinishRequested)
             return false;
@@ -239,7 +241,7 @@ namespace ORB_SLAM2 {
     }
 
     void Viewer::Release() {
-        unique_lock <mutex> lock(mMutexStop);
+        unique_lock<mutex> lock(mMutexStop);
         mbStopped = false;
     }
 
