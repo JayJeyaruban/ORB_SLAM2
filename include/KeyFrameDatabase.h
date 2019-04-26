@@ -57,14 +57,13 @@ public:
    // Relocalization
    std::vector<KeyFrame*> DetectRelocalizationCandidates(Frame* F);
 
+    // Inverted file
+    std::vector<list<KeyFrame*> > mvInvertedFile;
+
+    // Associated vocabulary
+    const ORBVocabulary* mpVoc;
+
 protected:
-
-  // Associated vocabulary
-  const ORBVocabulary* mpVoc;
-
-  // Inverted file
-  std::vector<list<KeyFrame*> > mvInvertedFile;
-
   // Mutex
   std::mutex mMutex;
 };

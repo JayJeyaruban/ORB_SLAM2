@@ -130,7 +130,8 @@ public:
     eSensor GetSensor();
     vector<KeyFrame *> GetKeyFrames();
 
-private:
+protected:
+    System(const eSensor sensor, const bool bUseViewer = true);
 
     // Input sensor
     eSensor mSensor;

@@ -113,6 +113,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
 }
 
+System::System(const ORB_SLAM2::System::eSensor sensor, const bool bUseViewer)
+    : mSensor(sensor),
+    mpViewer(static_cast<Viewer*>(NULL)),
+    mbReset(false),
+    mbActivateLocalizationMode(false),
+    mbDeactivateLocalizationMode(false)  {}
+
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
 {
     if(mSensor!=STEREO)
